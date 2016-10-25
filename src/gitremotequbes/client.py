@@ -49,16 +49,13 @@ def main():
             assert reply == "\n", "local: wrong reply %r" % reply
             sys.stdout.write(reply)
 
-            print >> sys.stderr, "local: ready to begin bidi comms"
-
             allfds = {sys.stdin: vm.stdin, vm.stdout: sys.stdout}
-            allnames = {
+            allnames = None and {
                 sys.stdin: "git writes",
                 sys.stdout: "git reads",
                 vm.stdin: "input to VM",
                 vm.stdout: "output from VM",
             }
-            allnames = None
             gitremotequbes.copier.copy(allfds, allnames, "local:  ")
             break
         else:

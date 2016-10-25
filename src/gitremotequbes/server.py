@@ -30,7 +30,7 @@ def main():
         env["GIT_DIR"] = git_dir
         stdin = kwargs.get("stdin")
         stdout = kwargs.get("stdout")
-        print >> sys.stderr, "remote: running git", args
+        # print >> sys.stderr, "remote: running git", args
         return subprocess.Popen(["git"] + list(args),
                                 env=env,
                                 stdin=stdin,
@@ -42,28 +42,25 @@ def main():
         if cmd.startswith("connect "):
             command = cmd[8:-1]
             assert command == "git-upload-pack", "remote: wrong command %r" % command
-            command = command[4:]
             sys.stdout.write("\n")
             sys.stdout.flush()
-            p = gitpopen(command,
+            p = gitpopen(command[4:],
                          git_dir,
                          stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE)
 
-            print >> sys.stderr, "remote: ready to begin bidi comms"
-
             allfds = {p.stdout: sys.stdout, sys.stdin: p.stdin}
-            allnames = {
+            allnames = None and {
                 p.stdout: "git-receive-pack output",
                 p.stdin: "git-receive-pack input",
                 sys.stdin: "master output",
                 sys.stdout: "master input",
             }
-            allnames = None
             gitremotequbes.copier.copy(allfds, allnames, "remote: ")
 
             ret = p.wait()
-            print >> sys.stderr, "remote: finished %s with status %s" % (command, ret)
+            if ret != 0:
+                print >> sys.stderr, "remote: finished %s with status %s" % (command, ret)
             break
         else:
             assert 0, "remote: invalid command %r" % cmd
