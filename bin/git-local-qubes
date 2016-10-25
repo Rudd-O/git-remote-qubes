@@ -5,4 +5,4 @@ import sys
 import gitremotequbes.server
 
 
-gitremotequbes.server.main()
+sys.exit(gitremotequbes.server.main())

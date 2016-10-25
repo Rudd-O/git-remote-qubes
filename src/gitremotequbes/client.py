@@ -1,15 +1,15 @@
 import argparse
 import errno
-import fcntl
 import md5
 import os
 import pipes
-import select
 import signal
 import subprocess
 import sys
 import threading
 import urlparse
+
+import gitremotequbes.copier
 
 
 def get_main_parser():
@@ -25,78 +25,42 @@ def main():
     url = urlparse.urlparse(args.url)
     assert url.scheme == "qubes"
 
-    os.execv(
-        "/usr/lib/qubes/qrexec-client-vm",
+    vm = subprocess.Popen(
         ["/usr/lib/qubes/qrexec-client-vm",
          url.netloc,
-         "ruddo.Git",
-         sys.executable,
-         "-u",
-         __file__, args.name, url.path]
+         "ruddo.Git"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE
     )
 
-
-def nb(f):
-    fd = f.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-
-def get_helper_parser():
-    p = argparse.ArgumentParser()
-    p.add_argument("name", metavar="NAME")
-    p.add_argument("path", metavar="PATH")
-    return p
-
-
-def helper():
-    p = get_helper_parser()
-    args = p.parse_args()
-
-    gitoutput = os.fdopen(int(os.getenv("SAVED_FD_0")), "rb")
-    gitinput = os.fdopen(int(os.getenv("SAVED_FD_1")), "ab")
-
-    cmd = gitoutput.readline()
+    cmd = sys.stdin.readline()
     assert cmd == "capabilities\n"
+    sys.stdout.write("connect\n\n")
 
-    gitinput.write("connect\n\n")
-    gitinput.flush()
-
-    quotedargs = " ".join(pipes.quote(x) for x in [args.name, args.path])
+    quotedargs = " ".join(pipes.quote(x) for x in [args.name, url.path])
     quotedlen = len(quotedargs)
-    sys.stdout.write("%s\n" % quotedlen + quotedargs)
-    sys.stdout.flush()
+    vm.stdin.write("%s\n" % quotedlen + quotedargs)
 
     while True:
-        cmd = gitoutput.readline()
+        cmd = sys.stdin.readline()
         if cmd.startswith("connect "):
-            sys.stdout.write(cmd)
-            reply = sys.stdin.readline()
+            vm.stdin.write(cmd)
+            reply = vm.stdout.readline()
             assert reply == "\n", "local: wrong reply %r" % reply
-            gitinput.write(reply)
-            gitinput.flush()
-            nb(gitoutput)
-            nb(sys.stdin)
-            allfds = [gitoutput, sys.stdin]
-            while allfds:
-                fds = select.select(allfds, [], [])
-                byte = fds[0][0].read()
-                if fds[0][0] == gitoutput:
-                    out = sys.stdout
-                else:
-                    out = gitinput
-                if byte:
-                    out.write(byte)
-                    out.flush()
-                else:
-                    fds[0][0].close()
-                    out.close()
-                    allfds.remove(fds[0][0])
+            sys.stdout.write(reply)
+
+            print >> sys.stderr, "local: ready to begin bidi comms"
+
+            allfds = {sys.stdin: vm.stdin, vm.stdout: sys.stdout}
+            allnames = {
+                sys.stdin: "git writes",
+                sys.stdout: "git reads",
+                vm.stdin: "input to VM",
+                vm.stdout: "output from VM",
+            }
+            allnames = None
+            gitremotequbes.copier.copy(allfds, allnames, "local:  ")
             break
         else:
             assert 0, "remote: invalid command %r" % cmd
             break
-
-
-if __name__ == "__main__":
-    helper()
