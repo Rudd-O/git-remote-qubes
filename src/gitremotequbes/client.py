@@ -1,12 +1,7 @@
 import argparse
-import errno
-import md5
-import os
 import pipes
-import signal
 import subprocess
 import sys
-import threading
 import urlparse
 
 import gitremotequbes.copier

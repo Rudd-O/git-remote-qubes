@@ -1,9 +1,5 @@
-import errno
-import fcntl
 import os
-import select
 import shlex
-import struct
 import subprocess
 import sys
 
@@ -40,11 +36,10 @@ def main():
     while True:
         cmd = sys.stdin.readline()
         if cmd.startswith("connect "):
-            command = cmd[8:-1]
-            assert command == "git-upload-pack", "remote: wrong command %r" % command
+            cmd = cmd[8:-1]
+            assert cmd == "git-upload-pack", "remote: bad command %r" % cmd
             sys.stdout.write("\n")
-            sys.stdout.flush()
-            p = gitpopen(command[4:],
+            p = gitpopen(cmd[4:],
                          git_dir,
                          stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE)
@@ -60,7 +55,8 @@ def main():
 
             ret = p.wait()
             if ret != 0:
-                print >> sys.stderr, "remote: finished %s with status %s" % (command, ret)
+                print >> sys.stderr, \
+                    "remote: finished %s with status %s" % (cmd, ret)
             break
         else:
             assert 0, "remote: invalid command %r" % cmd
