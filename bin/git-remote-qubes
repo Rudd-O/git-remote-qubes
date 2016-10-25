@@ -1,0 +1,8 @@
+#!/usr/bin/python2 -u
+
+import sys
+
+import gitremotequbes.client
+
+
+gitremotequbes.client.main()
