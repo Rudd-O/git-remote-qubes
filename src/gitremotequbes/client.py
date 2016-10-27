@@ -1,4 +1,5 @@
 import argparse
+import logging
 import pipes
 import subprocess
 import sys
@@ -15,10 +16,15 @@ def get_main_parser():
 
 
 def main():
+    logging.basicConfig(format="local:" + logging.BASIC_FORMAT,
+                        level=logging.DEBUG)
+
     p = get_main_parser()
     args = p.parse_args()
     url = urlparse.urlparse(args.url)
     assert url.scheme == "qubes"
+
+    l = logging.getLogger("remote")
 
     vm = subprocess.Popen(
         ["/usr/lib/qubes/qrexec-client-vm",
@@ -42,29 +48,28 @@ def main():
         cmd = sys.stdin.readline()
 
         if not cmd:
-            print >> sys.stderr, "local: no more commands, exiting"
+            l.debug("no more commands, exiting")
             return 0
         elif cmd.startswith("connect "):
-            print >> sys.stderr, "local: asked to run %r" % (cmd,)
+            l.debug("asked to run %s", cmd)
             vm.stdin.write(cmd)
             reply = vm.stdout.readline()
             assert reply == "\n", "local: wrong reply %r" % reply
             sys.stdout.write(reply)
 
-            gitremotequbes.copier.copy({
-                sys.stdin: vm.stdin,
-                vm.stdout: sys.stdout,
-            }, eager=False, closefds=False)
-
-            ret = vm.wait()
+            ret = gitremotequbes.copier.call(
+                vm,
+                sys.stdin,
+                sys.stdout
+            )
             if ret != 0:
-                print >> sys.stderr, \
-                    "local: remote side running %r exited with %s" % (cmd, ret)
-                return ret
+                l.debug("remote side exited with %s", ret)
             else:
-                print >> sys.stderr, \
-                    "local: remote side running %r exited normally" % (cmd,)
+                l.debug("remote side exited normally")
+            break
         else:
-            print >> sys.stderr, \
-                "local: invalid command %r" % cmd
-            return 127
+            l.error("local: invalid command %s", cmd)
+            ret = 127
+            break
+
+    return ret

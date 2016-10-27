@@ -1,11 +1,15 @@
-import os
+import logging
 import shlex
+import signal
 import sys
 
 import gitremotequbes.copier
 
 
 def main():
+    logging.basicConfig(format="remote:" + logging.BASIC_FORMAT,
+                        level=logging.DEBUG)
+
     quotedlen = sys.stdin.readline()
     quotedlen = int(quotedlen, 10)
     if quotedlen > 65535 or quotedlen < 1:
@@ -18,6 +22,8 @@ def main():
     except Exception, e:
         assert 0, "invalid argument list: %s" % e
 
+    l = logging.getLogger("remote")
+
     git_dir = args[1]
 
     ret = 0
@@ -27,7 +33,7 @@ def main():
         cmd = sys.stdin.readline()
 
         if not cmd:
-            print >> sys.stderr, "remote: no more commands, exiting"
+            l.debug("no more commands, exiting")
             return 0
         if cmd.startswith("connect "):
             cmd = cmd[8:-1]
@@ -35,21 +41,15 @@ def main():
                 "remote: bad command %r" % cmd
             sys.stdout.write("\n")
 
-            print >> sys.stderr, "remote: running command", cmd
             ret = gitremotequbes.copier.call(
                 ["git", cmd[4:], git_dir],
                 sys.stdin,
                 sys.stdout,
-                eager=True,
-                closefds=False,
             )
             if ret != 0:
-                print >> sys.stderr, \
-                    "remote: %s exited with nonzero status %s" % (cmd, ret)
-                break
+                l.debug("%s exited with nonzero status %s", cmd, ret)
             else:
-                print >> sys.stderr, \
-                    "remote: %s exited normally" % (cmd,)
+                l.debug("%s exited normally", cmd)
             break
         else:
             assert 0, "remote: invalid command %r" % cmd

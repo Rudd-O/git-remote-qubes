@@ -1,4 +1,5 @@
 import fcntl
+import logging
 import os
 import select
 import subprocess
@@ -17,114 +18,118 @@ def b(f):
     fcntl.fcntl(fd, fcntl.F_SETFL, fl & (~os.O_NONBLOCK))
 
 
-def copy(allfds, eager=True, closefds=True):
+class Copy(threading.Thread):
     """Copy from the keys of the dictionary allfds to the values of the
-    allfds dictionary.   If eager is True and one of the readables in
-    allfds' keys is closed, close down all fds if closefds=True, then return.
-    Else wait until all fds are closed, copying data in the meantime."""
-    for fd in allfds.keys() + allfds.values():
-        nb(fd)
+    allfds dictionary.
 
-    allfds_reverse = dict((v, k) for k, v in allfds.items())
-    already_readable = set()
-    already_writable = set()
-    readypairs = {}
+    Side effects: fds passed will be set to nonblocking.
+    """
 
-    shutdown = False
+    def __init__(self, allfds):
+        threading.Thread.__init__(self)
+        self.l = logging.getLogger("copy")
+        self.setDaemon(True)
+        self.allfds = allfds
+        for readable in allfds:
+            nb(readable)
+        self.enders = {}
+        for r in self.allfds:
+            pr, pw = os.pipe()
+            pr = os.fdopen(pr, "rb")
+            pw = os.fdopen(pw, "ab")
+            nb(pr)
+            self.enders[r] = [pr, pw]
 
-    while allfds:
-        query_readables = set(allfds.keys()) - already_readable
-        query_writables = set(allfds.values()) - already_writable
+    def fdname(self, f):
+        return "<%s %r>" % (f.name, f.mode)
 
-        readables, writables, _ = select.select(
-            query_readables,
-            query_writables,
-            [],
-            0 if shutdown else None,
-        )
+    def run(self):
+        fdname = self.fdname
+        l = self.l
 
-        if shutdown and not (readables or writables):
-            # A previous loop discovered that one of the readables was closed.
-            # We polled one more time with timeout zero, and nothing came up
-            # ready to be read or written.  This means we are ready to shut
-            # down the entire copy loop.
-            if closefds:
-                for readable, writable in allfds.items():
-                    readable.close()
-                    writable.close()
-            break
+        def copier(readable, writable):
+            l.debug("beginning to copy from %s to %s",
+                    fdname(readable), fdname(writable))
+            stop = False
+            readables = [readable, self.enders[readable][0]]
+            while True:
+                r, _, _ = select.select(
+                    readables,
+                    [],
+                    [],
+                    0 if stop else None
+                )
+                if self.enders[readable][0] in r:
+                    l.debug("signaled to stop copying from %s to %s",
+                            fdname(readable), fdname(writable))
+                    self.enders[readable][0].close()
+                    readables.remove(self.enders[readable][0])
+                    stop = True
+                    continue
+                elif stop and not r:
+                    break
+                chunk = r[0].read()
+                if chunk == '':
+                    l.debug("%s closed", fdname(readable))
+                    r[0].close()
+                    self.enders[readable][0].close()
+                    break
+                l.debug("copying from %s to %s: %r",
+                        fdname(readable), fdname(writable), chunk)
+                writable.write(chunk)
+                writable.flush()
+            l.debug("done copying data from %s to %s",
+                    fdname(readable), fdname(writable))
 
-        already_readable.update(set(readables))
-        already_writable.update(writables)
+        self.l.debug("beginning to copy")
 
-        for readable in allfds.keys():
-            if readable in already_readable:
-                if readable not in readypairs:
-                    readypairs[readable] = False
-        for writable in allfds.values():
-            if writable in already_writable:
-                matching_readable = allfds_reverse[writable]
-                if matching_readable in readypairs:
-                    readypairs[matching_readable] = writable
+        threads = []
+        for readable, writable in self.allfds.items():
+            threads.append(threading.Thread(target=copier,
+                                            args=(readable, writable)))
+            threads[-1].setDaemon(True)
+            threads[-1].start()
 
-        for readable, writable in readypairs.items():
-            del readypairs[readable]
-            already_readable.remove(readable)
-            already_writable.remove(writable)
-            buf = readable.read()
-            if not buf:
-                if closefds:
-                    readable.close()
-                    writable.close()
-                del allfds[readable]
-                del allfds_reverse[writable]
-                # Here we make the decision to shut the entire loop down
-                # after the first time that a readable has been closed.
-                # but only if eager is True.
-                if eager:
-                    shutdown = True
-            else:
-                try:
-                    writable.write(buf)
-                    writable.flush()
-                except Exception:
-                    readable.close()
-                    writable.close()
-                    del allfds[readable]
-                    del allfds_reverse[writable]
-                    raise
+        for t in threads:
+            t.join()
+
+        self.l.debug("done copying")
+
+    def end(self):
+        for readable, (_, wp) in self.enders.items():
+            self.l.debug("ending copy of data from %s",
+                         self.fdname(readable))
+            wp.close()
 
 
-def call(cmd, stdin, stdout, env=None, eager=True, closefds=True):
-    """call() runs a subprocess, copying data from stdin into the process'
-    stdin, and stdout from the process into stdout.  The difference
-    with subprocess.call is that, when eager is true, as soon as one of the
-    read fds is closed, all other (both the passed ones and the subprocess
-    ones) are closed, the copy loop exits, and call() switches to waiting
-    for the process to finish."""
+def call(cmd, stdin, stdout, env=None):
+    """call() runs (or adopts) a subprocess, copying data from stdin into
+    the process' stdin, and stdout from the process into stdout.
+    """
     if env is None:
         env = os.environ
-    p = subprocess.Popen(list(cmd),
-                         env=env,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE)
 
-    ret = []
+    l = logging.getLogger("call")
 
-    def monitor():
-        ret.append(p.wait())
+    if isinstance(cmd, subprocess.Popen):
+        p = cmd
+        l.debug("adopting command %s", cmd)
+    else:
+        l.debug("running command %s", cmd)
+        p = subprocess.Popen(list(cmd),
+                             env=env,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE)
 
-    t = threading.Thread(target=monitor)
-    t.setDaemon(True)
-    t.start()
+    copier = Copy({p.stdout: stdout, stdin: p.stdin})
+    copier.start()
 
-    allfds = {p.stdout: stdout, stdin: p.stdin}
-    copy(allfds, eager=eager, closefds=closefds)
+    l.debug("waiting for %s to end", cmd)
+    ret = p.wait()
+    l.debug("%s ended, signaling copier to end", cmd)
+    copier.end()
+    l.debug("copier signaled, waiting for readers and writers")
+    copier.join()
+    l.debug("readers and writers done")
 
-    t.join()
-
-    if not closefds:
-        p.stdin.close()
-        p.stdout.close()
-
-    return ret[0]
+    return ret
