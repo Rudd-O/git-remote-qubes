@@ -12,7 +12,11 @@ def nb(f):
     fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
 
 
-def copy(allfds):
+def copy(allfds, eager=True):
+    """Copy from the keys of the dictionary allfds to the values of the
+    allfds dictionary.   If eager is True and one of the readables in
+    allfds' keys is closed, close down all fds and return.  Else wait
+    until all fds are closed, copying data in the meantime."""
     for fd in allfds.keys() + allfds.values():
         nb(fd)
 
@@ -39,6 +43,9 @@ def copy(allfds):
             # We polled one more time with timeout zero, and nothing came up
             # ready to be read or written.  This means we are ready to shut
             # down the entire copy loop.
+            for readable, writable in allfds.items():
+                readable.close()
+                writable.close()
             break
 
         already_readable.update(set(readables))
@@ -66,7 +73,9 @@ def copy(allfds):
                 del allfds_reverse[writable]
                 # Here we make the decision to shut the entire loop down
                 # after the first time that a readable has been closed.
-                shutdown = True
+                # but only if eager is True.
+                if eager:
+                    shutdown = True
             else:
                 try:
                     writable.write(buf)
@@ -79,13 +88,13 @@ def copy(allfds):
                     raise
 
 
-def call(cmd, stdin, stdout, env=None):
+def call(cmd, stdin, stdout, env=None, eager=True):
     """call() runs a subprocess, copying data from stdin into the process'
     stdin, and stdout from the process into stdout.  The difference
-    with subprocess.call is that, as soon as one of the read fds is closed,
-    all fds (both the passed ones and the subprocess ones) are closed,
-    the copy loop exits, and call() switches to waiting for the process
-    to finish."""
+    with subprocess.call is that, when eager is true, as soon as one of the
+    read fds is closed, all other (both the passed ones and the subprocess
+    ones) are closed, the copy loop exits, and call() switches to waiting
+    for the process to finish."""
     if env is None:
         env = os.environ
     p = subprocess.Popen(list(cmd),
@@ -103,7 +112,7 @@ def call(cmd, stdin, stdout, env=None):
     t.start()
 
     allfds = {p.stdout: stdout, stdin: p.stdin}
-    copy(allfds)
+    copy(allfds, eager=eager)
 
     t.join()
     return ret[0]

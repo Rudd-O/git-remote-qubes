@@ -36,19 +36,18 @@ def main():
     quotedlen = len(quotedargs)
     vm.stdin.write("%s\n" % quotedlen + quotedargs)
 
-    while True:
-        cmd = sys.stdin.readline()
-        if cmd.startswith("connect "):
-            vm.stdin.write(cmd)
-            reply = vm.stdout.readline()
-            assert reply == "\n", "local: wrong reply %r" % reply
-            sys.stdout.write(reply)
+    cmd = sys.stdin.readline()
+    if cmd.startswith("connect "):
+        vm.stdin.write(cmd)
+        reply = vm.stdout.readline()
+        assert reply == "\n", "local: wrong reply %r" % reply
+        sys.stdout.write(reply)
 
-            gitremotequbes.copier.copy({
-                sys.stdin: vm.stdin,
-                vm.stdout: sys.stdout,
-            })
-            break
-        else:
-            assert 0, "local: invalid command %r" % cmd
-            break
+        gitremotequbes.copier.copy({
+            sys.stdin: vm.stdin,
+            vm.stdout: sys.stdout,
+        }, eager=True)
+        return vm.wait()
+    else:
+        assert 0, "local: invalid command %r" % cmd
+        return 127
