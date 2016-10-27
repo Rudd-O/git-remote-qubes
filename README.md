@@ -94,6 +94,11 @@ Now copy the `git-remote-qubes-dom0-<version>.noarch.rpm` file to
 your dom0.  At this point, the default policy (`deny`) is active on
 your Qubes OS system, and you can begin pushing and pulling.
 
+Those clever among you will have discovered that there is a `Makefile`
+included, and that you can use the `Makefile` to install the software on
+other non-RPM templates.  I welcome pull requests to add support for
+other distro packages and Qubes OS templates.
+
 ## Troubleshooting and debugging
 
 If you are experiencing problems communicating with a Git repo in a VM,
@@ -101,4 +106,4 @@ export the variable `QUBES_DEBUG` on the side of your client (where your
 local Git repo is), and look at the debugging output that appears.
 
 As always, you can file new issues on the repo of this project for help
-with fixing bugs that the programs may have.
+with fixing bugs that the programs may have.  Pull requests also welcome.
