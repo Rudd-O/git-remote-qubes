@@ -1,1 +1,1 @@
-@BINDIR@/git-local-qubes
+@LIBEXECDIR@/git-local-qubes

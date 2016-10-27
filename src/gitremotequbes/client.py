@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import pipes
 import subprocess
 import sys
@@ -16,8 +17,10 @@ def get_main_parser():
 
 
 def main():
-    logging.basicConfig(format="local:" + logging.BASIC_FORMAT,
-                        level=logging.DEBUG)
+    logging.basicConfig(
+        format="local: " + logging.BASIC_FORMAT,
+        level=logging.DEBUG if os.getenv("QUBES_DEBUG") else logging.INFO,
+    )
 
     p = get_main_parser()
     args = p.parse_args()
@@ -38,7 +41,10 @@ def main():
     assert cmd == "capabilities\n"
     sys.stdout.write("connect\n\n")
 
-    quotedargs = " ".join(pipes.quote(x) for x in [args.name, url.path])
+    remoteargs = [args.name, url.path]
+    if os.getenv("QUBES_DEBUG"):
+        remoteargs = ["-d"] + remoteargs
+    quotedargs = " ".join(pipes.quote(x) for x in remoteargs)
     quotedlen = len(quotedargs)
     vm.stdin.write("%s\n" % quotedlen + quotedargs)
 

@@ -7,9 +7,6 @@ import gitremotequbes.copier
 
 
 def main():
-    logging.basicConfig(format="remote:" + logging.BASIC_FORMAT,
-                        level=logging.DEBUG)
-
     quotedlen = sys.stdin.readline()
     quotedlen = int(quotedlen, 10)
     if quotedlen > 65535 or quotedlen < 1:
@@ -21,6 +18,14 @@ def main():
         args = shlex.split(args)
     except Exception, e:
         assert 0, "invalid argument list: %s" % e
+    if args[0] == "-d":
+        args = args[1:]
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    logging.basicConfig(format="remote:" + logging.BASIC_FORMAT, level=level)
+
 
     l = logging.getLogger("remote")
 

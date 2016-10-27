@@ -1,5 +1,6 @@
 BINDIR=/usr/bin
 SYSCONFDIR=/etc
+LIBEXECDIR=/usr/libexec
 DESTDIR=
 PROGNAME=git-remote-qubes
 SITELIBDIR=`python2 -c 'import distutils.sysconfig; print distutils.sysconfig.get_python_lib()'`
@@ -14,7 +15,7 @@ src/gitremotequbes/%.pyc: src/gitremotequbes/%.py
 	python -m compileall src/gitremotequbes/
 
 etc/%: etc/%.in
-	cat $< | sed 's|@BINDIR@|$(BINDIR)|g' > $@
+	cat $< | sed 's|@BINDIR@|$(BINDIR)|g' | sed 's|@LIBEXECDIR@|$(LIBEXECDIR)|g' > $@
 
 clean:
 	rm -rfv $(OBJLIST) $(SUBSTLIST)
@@ -32,5 +33,10 @@ srpm: dist
 
 install-vm: all
 	install -Dm 644 src/gitremotequbes/*.py src/gitremotequbes/*.pyc -t $(DESTDIR)/$(SITELIBDIR)/gitremotequbes/
-	install -Dm 755 bin/git-*-qubes -t $(DESTDIR)/$(BINDIR)/
+	install -Dm 755 bin/git-local-qubes -t $(DESTDIR)/$(LIBEXECDIR)/
+	install -Dm 755 bin/git-remote-qubes -t $(DESTDIR)/$(LIBEXECDIR)/git-core/
 	install -Dm 755 etc/qubes-rpc/ruddo.Git -t $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/
+
+install-dom0: all
+	install -Dm 644 etc/qubes-rpc/policy/ruddo.Git -t $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/policy/
+	getent group qubes && chgrp qubes $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/policy/ || true

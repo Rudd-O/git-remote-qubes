@@ -41,7 +41,7 @@ class Copy(threading.Thread):
             self.enders[r] = [pr, pw]
 
     def fdname(self, f):
-        return "<%s %r>" % (f.name, f.mode)
+        return "[%s %r]" % (f.name, f.mode)
 
     def run(self):
         fdname = self.fdname
