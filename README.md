@@ -38,7 +38,7 @@ git clone qubes://clientvm/home/user/xyz
 You will get a permission dialog from dom0 asking for `ruddo.Git` access.
 Accept it.  Note that accepting the permission dialog implicitly gives
 Git access to all Git repos stored in `servervm`, but only for that one
-instance (unless you say *Yes to all*, in which case the permission
+execution (unless you say *Yes to all*, in which case the permission
 is remembered within the policy file that you installed earlier with the
 `dom0` package).
 
