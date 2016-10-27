@@ -4,13 +4,60 @@ This is a very simple Git protocol bridge between Qubes OS VMs.  With it,
 you can `git pull` and `git push` between VMs without having to grant
 any of the VMs any special policy privileges other than access to Git.
 
-## Intro
+## Using the software
 
-Very straightforward.  To use this:
+These instructions assume you have installed the software.  See the
+*Installing the software* heading below for more information.
 
-* install the software
-* create a repository on another VM
-* add a remote to your local repository
+### Creating a repository
+
+We'll assume for illustration purposes that you want to access a repository
+stored in `/home/user/xyz` on your VM `servervm`.
+
+Run the following commands on `servervm`:
+
+```
+cd /home/user
+mkdir -p xyz
+cd xyz
+git --bare init
+```
+
+That's it.  Your new and empty repository is ready to use.
+
+### Adding a remote to a local repository
+
+For illustration purposes, you'll be pushing and pulling `servervm`'s `xyz`
+repo on your vm `clientvm`.  Run the following commands on `clientvm`:
+
+```
+cd /home/user
+git clone qubes://clientvm/home/user/xyz
+```
+
+You will get a permission dialog from dom0 asking for `ruddo.Git` access.
+Accept it.  Note that accepting the permission dialog implicitly gives
+Git access to all Git repos stored in `servervm`, but only for that one
+instance (unless you say *Yes to all*, in which case the permission
+is remembered within the policy file that you installed earlier with the
+`dom0` package).
+
+This should have cloned `xyz` from `servervm` into your `/home/user/xyz`
+directory in `clientvm`.
+
+From this point on, you can push and pull in `clientvm` from
+`servervm:/home/user/xyz` to your heart's content.
+
+If, instead of cloning, you have an existing repo, you can add a new remote
+just as easily:
+
+```
+cd /home/user/existingxyz
+git remote add qubesremotevm qubes://servervm/home/user/xyz
+```
+
+That addition will enable to push and pull from the remote `qubesremotevm`
+which represents the repo `/home/user/xyz` in the remote VM `servervm`.
 
 ## Installing the software
 
@@ -46,45 +93,6 @@ push / pull requests from different VMs in the same system.
 Now copy the `git-remote-qubes-dom0-<version>.noarch.rpm` file to
 your dom0.  At this point, the default policy (`deny`) is active on
 your Qubes OS system, and you can begin pushing and pulling.
-
-## Using the software
-
-### Creating a repository
-
-We'll assume for illustration purposes that you want to access a repository
-stored in `/home/user/xyz` on your VM `servervm`.
-
-Run the following commands on `servervm`:
-
-```
-cd /home/user
-mkdir -p xyz
-cd xyz
-git --bare init
-```
-
-That's it.  Your repository is ready to use.
-
-### Adding a remote to a local repository
-
-For illustration purposes, you'll be pushing and pulling `servervm`'s `xyz`
-repo on your vm `clientvm`.  Run the following commands on `clientvm`:
-
-```
-cd /home/user
-git clone qubes://clientvm/home/user/xyz
-```
-
-You will get a permission dialog from dom0 asking for `ruddo.Git` access.
-Accept it.  Note that accepting the permission dialog implicitly gives
-Git access to all Git repos stored in `servervm`, but only for that one
-instance (unless you say *Yes to all*, in which case the permission
-is remembered within the policy file that you installed earlier with the
-`dom0` package).
-
-This should have cloned `xyz` from `servervm` into your `/home/user/xyz`
-directory in `clientvm`.
-
 
 ## Troubleshooting and debugging
 
