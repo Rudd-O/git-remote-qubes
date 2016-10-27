@@ -44,15 +44,11 @@ def main():
             assert reply == "\n", "local: wrong reply %r" % reply
             sys.stdout.write(reply)
 
-            allfds = {sys.stdin: vm.stdin, vm.stdout: sys.stdout}
-            allnames = None and {
-                sys.stdin: "git writes",
-                sys.stdout: "git reads",
-                vm.stdin: "input to VM",
-                vm.stdout: "output from VM",
-            }
-            gitremotequbes.copier.copy(allfds, allnames, "local:  ")
+            gitremotequbes.copier.copy({
+                sys.stdin: vm.stdin,
+                vm.stdout: sys.stdout,
+            })
             break
         else:
-            assert 0, "remote: invalid command %r" % cmd
+            assert 0, "local: invalid command %r" % cmd
             break

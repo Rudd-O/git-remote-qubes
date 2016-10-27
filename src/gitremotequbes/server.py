@@ -1,6 +1,5 @@
 import os
 import shlex
-import subprocess
 import sys
 
 import gitremotequbes.copier
@@ -21,17 +20,6 @@ def main():
 
     git_dir = args[1]
 
-    def gitpopen(*args, **kwargs):
-        env = dict(os.environ)
-        env["GIT_DIR"] = git_dir
-        stdin = kwargs.get("stdin")
-        stdout = kwargs.get("stdout")
-        # print >> sys.stderr, "remote: running git", args
-        return subprocess.Popen(["git"] + list(args),
-                                env=env,
-                                stdin=stdin,
-                                stdout=stdout)
-
     ret = 0
     while True:
         cmd = sys.stdin.readline()
@@ -39,24 +27,15 @@ def main():
             cmd = cmd[8:-1]
             assert cmd == "git-upload-pack", "remote: bad command %r" % cmd
             sys.stdout.write("\n")
-            p = gitpopen(cmd[4:],
-                         git_dir,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE)
 
-            allfds = {p.stdout: sys.stdout, sys.stdin: p.stdin}
-            allnames = None and {
-                p.stdout: "git-receive-pack output",
-                p.stdin: "git-receive-pack input",
-                sys.stdin: "master output",
-                sys.stdout: "master input",
-            }
-            gitremotequbes.copier.copy(allfds, allnames, "remote: ")
-
-            ret = p.wait()
+            ret = gitremotequbes.copier.call(
+                ["git", cmd[4:], git_dir],
+                sys.stdin,
+                sys.stdout
+            )
             if ret != 0:
                 print >> sys.stderr, \
-                    "remote: finished %s with status %s" % (cmd, ret)
+                    "remote: %s exited with nonzero status %s" % (cmd, ret)
             break
         else:
             assert 0, "remote: invalid command %r" % cmd
