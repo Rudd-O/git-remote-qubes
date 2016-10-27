@@ -71,7 +71,10 @@ class Copy(threading.Thread):
                 chunk = r[0].read()
                 if chunk == '':
                     l.debug("%s closed", fdname(readable))
-                    r[0].close()
+                    readable.close()
+                    l.debug("closing write end %s",
+                            fdname(self.allfds[readable]))
+                    self.allfds[readable].close()
                     self.enders[readable][0].close()
                     break
                 l.debug("copying from %s to %s: %r",
