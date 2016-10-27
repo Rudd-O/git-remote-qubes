@@ -65,5 +65,6 @@ def main():
                 print >> sys.stderr, \
                     "local: remote side running %r exited normally" % (cmd,)
         else:
-            assert 0, "local: invalid command %r" % cmd
+            print >> sys.stderr, \
+                "local: invalid command %r" % cmd
             return 127
