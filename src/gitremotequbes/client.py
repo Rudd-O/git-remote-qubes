@@ -36,18 +36,34 @@ def main():
     quotedlen = len(quotedargs)
     vm.stdin.write("%s\n" % quotedlen + quotedargs)
 
-    cmd = sys.stdin.readline()
-    if cmd.startswith("connect "):
-        vm.stdin.write(cmd)
-        reply = vm.stdout.readline()
-        assert reply == "\n", "local: wrong reply %r" % reply
-        sys.stdout.write(reply)
+    while True:
+        for f in sys.stdin, vm.stdin, sys.stdout, vm.stdout:
+            gitremotequbes.copier.b(f)
+        cmd = sys.stdin.readline()
 
-        gitremotequbes.copier.copy({
-            sys.stdin: vm.stdin,
-            vm.stdout: sys.stdout,
-        }, eager=True)
-        return vm.wait()
-    else:
-        assert 0, "local: invalid command %r" % cmd
-        return 127
+        if not cmd:
+            print >> sys.stderr, "local: no more commands, exiting"
+            return 0
+        elif cmd.startswith("connect "):
+            print >> sys.stderr, "local: asked to run %r" % (cmd,)
+            vm.stdin.write(cmd)
+            reply = vm.stdout.readline()
+            assert reply == "\n", "local: wrong reply %r" % reply
+            sys.stdout.write(reply)
+
+            gitremotequbes.copier.copy({
+                sys.stdin: vm.stdin,
+                vm.stdout: sys.stdout,
+            }, eager=False, closefds=False)
+
+            ret = vm.wait()
+            if ret != 0:
+                print >> sys.stderr, \
+                    "local: remote side running %r exited with %s" % (cmd, ret)
+                return ret
+            else:
+                print >> sys.stderr, \
+                    "local: remote side running %r exited normally" % (cmd,)
+        else:
+            assert 0, "local: invalid command %r" % cmd
+            return 127
