@@ -4,6 +4,14 @@ This is a very simple Git protocol bridge between Qubes OS VMs.  With it,
 you can `git pull` and `git push` between VMs without having to grant
 any of the VMs any special policy privileges other than access to Git.
 
+The advantages of this solution over Git-over-SSH or other networking
+protocols are clear:
+
+1. Better security: you do not need to network the VM that stores your
+   Git repos, or take care of firewall rules.
+2. More resource efficiency: you do not need to run any network-facing
+   daemons, effectively saving RAM for other uses.
+
 ## Using the software
 
 These instructions assume you have installed the software.  See the
