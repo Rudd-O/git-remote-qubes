@@ -18,6 +18,8 @@ BuildRequires:  python2
 
 Requires:       python2
 Requires:       git-core
+# systemd is required because of systemd-escape.
+Requires:       systemd
 
 %package dom0
 Summary:        Policy package for Qubes OS dom0s that arbitrates %{name}

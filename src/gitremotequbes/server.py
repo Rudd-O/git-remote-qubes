@@ -2,6 +2,7 @@ import logging
 import os
 import shlex
 import signal
+import subprocess
 import sys
 
 import gitremotequbes.copier
@@ -27,8 +28,16 @@ def main():
     git_dir = args[1]
 
     logging.basicConfig(format="remote:" + logging.BASIC_FORMAT, level=level)
-
     l = logging.getLogger()
+
+    trustedarg = os.getenv("QREXEC_SERVICE_ARGUMENT")
+    if trustedarg:
+        # Qubes OS subsystem has sent us an argument, and that argument
+        # is trusted, so trust that over whatever the remote process said.
+        l.debug("trustworthy argument %r sent by Qubes OS", trustedarg)
+        git_dir = subprocess.check_output([
+            "systemd-escape", "--unescape", "--", trustedarg
+        ])[:-1]
 
     sys.stdout.write("confirmed\n")
 
