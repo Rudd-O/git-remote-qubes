@@ -51,10 +51,9 @@ def main():
     line = vm.stdout.readline()
     if line != "confirmed\n":
         l.debug("the request appears to have been refused or it malfunctioned")
-        ret = 128
-    else:
-        ret = 0
+        return 128
 
+    ret = 0
     while ret == 0:
         for f in sys.stdin, vm.stdin, sys.stdout, vm.stdout:
             gitremotequbes.copier.b(f)
@@ -62,7 +61,7 @@ def main():
 
         if not cmd:
             l.debug("no more commands, exiting")
-            return 0
+            break
         elif cmd.startswith("connect "):
             l.debug("asked to run %s", cmd)
             vm.stdin.write(cmd)
