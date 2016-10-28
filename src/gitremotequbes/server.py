@@ -1,4 +1,5 @@
 import logging
+import os
 import shlex
 import signal
 import sys
@@ -23,15 +24,14 @@ def main():
         level = logging.DEBUG
     else:
         level = logging.INFO
+    git_dir = args[1]
 
     logging.basicConfig(format="remote:" + logging.BASIC_FORMAT, level=level)
 
+    l = logging.getLogger()
 
-    l = logging.getLogger("remote")
+    sys.stdout.write("confirmed\n")
 
-    git_dir = args[1]
-
-    ret = 0
     while True:
         for f in sys.stdin, sys.stdout:
             gitremotequbes.copier.b(f)
@@ -39,25 +39,13 @@ def main():
 
         if not cmd:
             l.debug("no more commands, exiting")
-            return 0
+            break
         if cmd.startswith("connect "):
             cmd = cmd[8:-1]
             assert cmd in ("git-upload-pack", "git-receive-pack"), \
                 "remote: bad command %r" % cmd
             sys.stdout.write("\n")
-
-            ret = gitremotequbes.copier.call(
-                ["git", cmd[4:], git_dir],
-                sys.stdin,
-                sys.stdout,
-            )
-            if ret != 0:
-                l.debug("%s exited with nonzero status %s", cmd, ret)
-            else:
-                l.debug("%s exited normally", cmd)
-            break
+            # And here we go.  We no longer are in control.  Child is.
+            os.execvp("git", ["git", cmd[4:], git_dir])
         else:
-            assert 0, "remote: invalid command %r" % cmd
-            break
-
-    return ret
+            assert 0, "invalid command %r" % cmd

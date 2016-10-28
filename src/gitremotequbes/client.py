@@ -18,7 +18,7 @@ def get_main_parser():
 
 def main():
     logging.basicConfig(
-        format="local: " + logging.BASIC_FORMAT,
+        format="local:" + logging.BASIC_FORMAT,
         level=logging.DEBUG if os.getenv("QUBES_DEBUG") else logging.INFO,
     )
 
@@ -27,7 +27,7 @@ def main():
     url = urlparse.urlparse(args.url)
     assert url.scheme == "qubes"
 
-    l = logging.getLogger("remote")
+    l = logging.getLogger()
 
     vm = subprocess.Popen(
         ["/usr/lib/qubes/qrexec-client-vm",
@@ -48,7 +48,14 @@ def main():
     quotedlen = len(quotedargs)
     vm.stdin.write("%s\n" % quotedlen + quotedargs)
 
-    while True:
+    line = vm.stdout.readline()
+    if line != "confirmed\n":
+        l.debug("the request appears to have been refused or it malfunctioned")
+        ret = 128
+    else:
+        ret = 0
+
+    while ret == 0:
         for f in sys.stdin, vm.stdin, sys.stdout, vm.stdout:
             gitremotequbes.copier.b(f)
         cmd = sys.stdin.readline()
@@ -73,9 +80,10 @@ def main():
             else:
                 l.debug("remote side exited normally")
             break
+        elif cmd == "\n":
+            l.debug("git sent us an empty line as command")
         else:
-            l.error("local: invalid command %s", cmd)
+            l.error("invalid command %r", cmd)
             ret = 127
-            break
 
     return ret
