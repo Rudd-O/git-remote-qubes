@@ -3,7 +3,7 @@
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
 Name:           git-remote-qubes
-Version:        0.0.2
+Version:        0.0.3
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Inter-VM git push and pull for Qubes OS AppVMs and StandaloneVMs
 BuildArch:      noarch
@@ -23,6 +23,8 @@ Requires:       systemd
 
 %package dom0
 Summary:        Policy package for Qubes OS dom0s that arbitrates %{name}
+
+Requires: systemd qubes-core-dom0-linux
 
 %description
 This package lets you setup Git servers on your Qubes OS VMs.
@@ -65,7 +67,7 @@ fi
 %doc README.md
 
 %files dom0
-%config(noreplace) %attr(0655, root, root) %{_sysconfdir}/qubes-rpc/policy/ruddo.Git
+%config(noreplace) %attr(0664, root, qubes) %{_sysconfdir}/qubes-rpc/policy/ruddo.Git
 %doc README.md
 
 %changelog

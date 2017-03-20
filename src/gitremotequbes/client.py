@@ -32,14 +32,14 @@ def main():
     rpcarg = subprocess.check_output([
         "systemd-escape", "--", url.path
     ])[:-1]
-    if len(rpcarg) > 64:
+    if len(rpcarg) > 64 or "\\" in rpcarg:
         # Path is too long!  We must do without rpcarg.
         rpcarg = None
 
     vm = subprocess.Popen(
         ["/usr/lib/qubes/qrexec-client-vm",
          url.netloc,
-         "ruddo.Git+%s" % rpcarg if rpcarg else "ruddo.Git"],
+         "ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE
     )
