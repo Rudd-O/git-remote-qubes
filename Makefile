@@ -38,5 +38,5 @@ install-vm: all
 	install -Dm 755 etc/qubes-rpc/ruddo.Git -t $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/
 
 install-dom0: all
-	install -Dm 664 -g qubes etc/qubes-rpc/policy/ruddo.Git -t $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/policy/
+	install -Dm 664 etc/qubes-rpc/policy/ruddo.Git -t $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/policy/
 	getent group qubes && chgrp qubes $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/policy/ || true
