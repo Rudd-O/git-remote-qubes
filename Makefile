@@ -12,7 +12,7 @@ all: $(OBJLIST) $(SUBSTLIST) bin/git-*-qubes
 
 src/gitremotequbes/%.pyc: src/gitremotequbes/%.py
 	@if [ -z "$(SITELIBDIR)" ] ; then echo Error: you need python 2 on your system >&2 ; exit 1 ; fi
-	python -m compileall src/gitremotequbes/
+	python2 -m compileall src/gitremotequbes/
 
 etc/%: etc/%.in
 	cat $< | sed 's|@BINDIR@|$(BINDIR)|g' | sed 's|@LIBEXECDIR@|$(LIBEXECDIR)|g' > $@
