@@ -2,8 +2,10 @@
 
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
+%{!?python2_sitelib: %define python2_sitelib %(python2 -c "from distutils.sysconfig import get_python_lib ; print get_python_lib(1)")}
+
 Name:           git-remote-qubes
-Version:        0.0.7
+Version:        0.0.8
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Inter-VM git push and pull for Qubes OS AppVMs and StandaloneVMs
 BuildArch:      noarch
