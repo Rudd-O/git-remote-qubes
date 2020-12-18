@@ -1,3 +1,4 @@
+%define __python /usr/bin/python2
 %define debug_package %{nil}
 
 %define mybuildnumber %{?build_number}%{?!build_number:1}
