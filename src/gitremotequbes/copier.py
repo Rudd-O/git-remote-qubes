@@ -69,7 +69,9 @@ class Copy(threading.Thread):
                 elif stop and not r:
                     break
                 chunk = r[0].read()
-                if chunk == '':
+                if type(chunk) is str:
+                    chunk = str.encode("utf-8")
+                if chunk == '' or chunk == b"":
                     l.debug("%s closed", fdname(readable))
                     readable.close()
                     l.debug("closing write end %s",

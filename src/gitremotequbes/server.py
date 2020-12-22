@@ -10,6 +10,11 @@ import gitremotequbes.copier
 
 def main():
     quotedlen = sys.stdin.readline()
+    if not quotedlen:
+        logging.basicConfig(format="remote:" + logging.BASIC_FORMAT, level=logging.INFO)
+        l = logging.getLogger()
+        logging.error("Peer disconnected early.")
+        return 8
     quotedlen = int(quotedlen, 10)
     if quotedlen > 65535 or quotedlen < 1:
         assert 0, "invalid len"
@@ -37,7 +42,7 @@ def main():
         l.debug("trustworthy argument %r sent by Qubes OS", trustedarg)
         git_dir = subprocess.check_output([
             "systemd-escape", "--unescape", "--", trustedarg
-        ])[:-1]
+        ], universal_newlines=True)[:-1]
 
     sys.stdout.write("confirmed\n")
 
