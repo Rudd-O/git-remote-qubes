@@ -2,10 +2,10 @@
 
 %define mybuildnumber %{?build_number}%{?!build_number:1}
 
-%{!?python2_sitelib: %define python2_sitelib %(python2 -c "from distutils.sysconfig import get_python_lib ; print get_python_lib(1)")}
+%{!?python3_sitelib: %define python3_sitelib %(python3 -c "from distutils.sysconfig import get_python_lib ; print(get_python_lib(1))")}
 
 Name:           git-remote-qubes
-Version:        0.0.8
+Version:        0.0.9
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Inter-VM git push and pull for Qubes OS AppVMs and StandaloneVMs
 BuildArch:      noarch
@@ -16,9 +16,9 @@ Source0:        https://github.com/Rudd-O/%{name}/archive/{%version}.tar.gz#/%{n
 
 BuildRequires:  make
 BuildRequires:  sed
-BuildRequires:  python2
+BuildRequires:  python3
 
-Requires:       python2
+Requires:       python3
 Requires:       git-core
 # systemd is required because of systemd-escape.
 Requires:       systemd
@@ -44,13 +44,13 @@ have VMs that have the %{name} package installed.
 
 %build
 # variables must be kept in sync with install
-make DESTDIR=$RPM_BUILD_ROOT BINDIR=%{_bindir} SYSCONFDIR=%{_sysconfdir} SITELIBDIR=%{python2_sitelib} LIBEXECDIR=%{_libexecdir}
+make DESTDIR=$RPM_BUILD_ROOT BINDIR=%{_bindir} SYSCONFDIR=%{_sysconfdir} SITELIBDIR=%{python3_sitelib} LIBEXECDIR=%{_libexecdir}
 
 %install
 rm -rf $RPM_BUILD_ROOT
 # variables must be kept in sync with build
 for target in install-vm install-dom0; do
-    make $target DESTDIR=$RPM_BUILD_ROOT BINDIR=%{_bindir} SYSCONFDIR=%{_sysconfdir} SITELIBDIR=%{python2_sitelib} LIBEXECDIR=%{_libexecdir}
+    make $target DESTDIR=$RPM_BUILD_ROOT BINDIR=%{_bindir} SYSCONFDIR=%{_sysconfdir} SITELIBDIR=%{python3_sitelib} LIBEXECDIR=%{_libexecdir}
 done
 
 %check
@@ -62,9 +62,9 @@ fi
 %files
 %attr(0755, root, root) %{_libexecdir}/git-local-qubes
 %attr(0755, root, root) %{_libexecdir}/git-core/git-remote-qubes
-%attr(0644, root, root) %{python2_sitelib}/gitremotequbes/*.py
-%attr(0644, root, root) %{python2_sitelib}/gitremotequbes/*.pyc
-%attr(0644, root, root) %{python2_sitelib}/gitremotequbes/*.pyo
+%attr(0644, root, root) %{python3_sitelib}/gitremotequbes/*.py
+%attr(0644, root, root) %{python3_sitelib}/gitremotequbes/*.pyc
+%attr(0644, root, root) %{python3_sitelib}/gitremotequbes/__pycache__/*.pyc
 %attr(0755, root, root) %{_sysconfdir}/qubes-rpc/ruddo.Git
 %doc README.md
 

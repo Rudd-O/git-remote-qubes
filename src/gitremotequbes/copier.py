@@ -87,7 +87,7 @@ class Copy(threading.Thread):
         self.l.debug("beginning to copy")
 
         threads = []
-        for readable, writable in self.allfds.items():
+        for readable, writable in list(self.allfds.items()):
             threads.append(threading.Thread(target=copier,
                                             args=(readable, writable)))
             threads[-1].setDaemon(True)
@@ -99,7 +99,7 @@ class Copy(threading.Thread):
         self.l.debug("done copying")
 
     def end(self):
-        for readable, (_, wp) in self.enders.items():
+        for readable, (_, wp) in list(self.enders.items()):
             self.l.debug("ending copy of data from %s",
                          self.fdname(readable))
             wp.close()

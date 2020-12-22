@@ -4,7 +4,7 @@ import os
 import pipes
 import subprocess
 import sys
-import urlparse
+import urllib.parse
 
 import gitremotequbes.copier
 
@@ -24,7 +24,7 @@ def main():
 
     p = get_main_parser()
     args = p.parse_args()
-    url = urlparse.urlparse(args.url)
+    url = urllib.parse.urlparse(args.url)
     assert url.scheme == "qubes"
 
     l = logging.getLogger()

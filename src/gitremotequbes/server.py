@@ -18,7 +18,7 @@ def main():
         assert 0, "invalid argument list"
     try:
         args = shlex.split(args)
-    except Exception, e:
+    except Exception as e:
         assert 0, "invalid argument list: %s" % e
     if args[0] == "-d":
         args = args[1:]
