@@ -1,6 +1,7 @@
 BINDIR=/usr/bin
 SYSCONFDIR=/etc
 LIBEXECDIR=/usr/libexec
+GITEXECPATH=`git --exec-path`
 DESTDIR=
 PROGNAME=git-remote-qubes
 SITELIBDIR=`python3 -c 'import distutils.sysconfig; print (distutils.sysconfig.get_python_lib())'`
@@ -34,7 +35,7 @@ srpm: dist
 install-vm: all
 	install -Dm 644 src/gitremotequbes/*.py src/gitremotequbes/__pycache__/*.pyc -t $(DESTDIR)/$(SITELIBDIR)/gitremotequbes/
 	install -Dm 755 bin/git-local-qubes -t $(DESTDIR)/$(LIBEXECDIR)/
-	install -Dm 755 bin/git-remote-qubes -t $(DESTDIR)/$(LIBEXECDIR)/git-core/
+	install -Dm 755 bin/git-remote-qubes -t $(DESTDIR)/$(GITEXECPATH)/
 	install -Dm 755 etc/qubes-rpc/ruddo.Git -t $(DESTDIR)/$(SYSCONFDIR)/qubes-rpc/
 
 install-dom0: all
