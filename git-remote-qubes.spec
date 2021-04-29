@@ -17,6 +17,7 @@ Source0:        https://github.com/Rudd-O/%{name}/archive/{%version}.tar.gz#/%{n
 BuildRequires:  make
 BuildRequires:  sed
 BuildRequires:  python3
+BuildRequires:  git
 
 Requires:       python3
 Requires:       git-core
