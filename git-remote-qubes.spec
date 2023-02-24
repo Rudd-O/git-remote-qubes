@@ -55,7 +55,7 @@ for target in install-vm install-dom0; do
 done
 
 %check
-if grep -r '@.*@' $RPM_BUILD_ROOT ; then
+if grep -r --exclude='*.pyc' --exclude='*.pyo' '@.*@' $RPM_BUILD_ROOT ; then
     echo "Check failed: files with AT identifiers appeared" >&2
     exit 1
 fi
