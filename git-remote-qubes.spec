@@ -5,7 +5,7 @@
 %{!?python3_sitelib: %define python3_sitelib %(python3 -c "from distutils.sysconfig import get_python_lib ; print(get_python_lib(1))")}
 
 Name:           git-remote-qubes
-Version:        0.0.12
+Version:        0.1.0
 Release:        %{mybuildnumber}%{?dist}
 Summary:        Inter-VM git push and pull for Qubes OS AppVMs and StandaloneVMs
 BuildArch:      noarch
@@ -26,6 +26,7 @@ Requires:       systemd
 
 %package dom0
 Summary:        Policy package for Qubes OS dom0s that arbitrates %{name}
+Requires:       qubes-core-dom0 >= 4.1
 
 Requires: systemd qubes-core-dom0-linux
 
@@ -55,7 +56,7 @@ for target in install-vm install-dom0; do
 done
 
 %check
-if grep -r --exclude='*.pyc' --exclude='*.pyo' '@.*@' $RPM_BUILD_ROOT ; then
+if grep -r --exclude='*.pyc' --exclude='*.pyo' --exclude='*.policy' '@.*@' $RPM_BUILD_ROOT ; then
     echo "Check failed: files with AT identifiers appeared" >&2
     exit 1
 fi
@@ -70,7 +71,7 @@ fi
 %doc README.md
 
 %files dom0
-%config(noreplace) %attr(0664, root, qubes) %{_sysconfdir}/qubes-rpc/policy/ruddo.Git
+%config(noreplace) %attr(0664, root, qubes) %{_sysconfdir}/qubes/policy.d/80-git-remote-qubes.policy
 %doc README.md
 
 %changelog
