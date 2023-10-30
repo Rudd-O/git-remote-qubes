@@ -23,7 +23,7 @@ clean:
 	find -name '*~' -print0 | xargs -0 rm -fv
 	rm -fv *.tar.gz *.rpm
 
-dist: clean
+dist:  clean
 	excludefrom= ; test -f .gitignore && excludefrom=--exclude-from=.gitignore ; DIR=$(PROGNAME)-`awk '/^Version:/ {print $$2}' $(PROGNAME).spec` && FILENAME=$$DIR.tar.gz && tar cvzf "$$FILENAME" --exclude="$$FILENAME" --exclude=.git --exclude=.gitignore $$excludefrom --transform="s|^|$$DIR/|" --show-transformed *
 
 rpm: dist
