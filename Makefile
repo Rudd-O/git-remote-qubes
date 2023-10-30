@@ -29,9 +29,6 @@ dist: clean
 rpm: dist
 	T=`mktemp -d` && rpmbuild --nodeps --define "_topdir $$T" -ta $(PROGNAME)-`awk '/^Version:/ {print $$2}' $(PROGNAME).spec`.tar.gz || { rm -rf "$$T"; exit 1; } && mv "$$T"/RPMS/*/* "$$T"/SRPMS/* . || { rm -rf "$$T"; exit 1; } && rm -rf "$$T"
 
-rpmdirty: dist
-	T=`mktemp -d` && rpmbuild --nodeps --define "_topdir $$T" -ta $(PROGNAME)-`awk '/^Version:/ {print $$2}' $(PROGNAME).spec`.tar.gz && mv "$$T"/RPMS/*/* "$$T"/SRPMS/* .
-
 srpm: dist
 	T=`mktemp -d` && rpmbuild --nodeps --define "_topdir $$T" -ts $(PROGNAME)-`awk '/^Version:/ {print $$2}' $(PROGNAME).spec`.tar.gz || { rm -rf "$$T"; exit 1; } && mv "$$T"/SRPMS/* . || { rm -rf "$$T"; exit 1; } && rm -rf "$$T"
 
