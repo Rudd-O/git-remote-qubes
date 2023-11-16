@@ -1,0 +1,5 @@
+* issues
+** building for debian
+*** tying debbuild
+   - fedora uses /usr/libexec/git-core/, while debian uses /usr/lib/git-core/
+   - fedora uses /usr/lib/python3.X/site-packages, while debian uses /usr/lib/python3.X/dist-packages

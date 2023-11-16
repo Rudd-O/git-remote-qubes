@@ -8,6 +8,23 @@ import urllib.parse
 
 import gitremotequbes.copier
 
+# FROM /usr/lib/python3.8/site-packages/qrexec/client.py >>>
+# 
+import pathlib
+
+QREXEC_CLIENT_DOM0 = "/usr/bin/qrexec-client"
+QREXEC_CLIENT_VM = "/usr/bin/qrexec-client-vm"
+RPC_MULTIPLEXER = "/usr/lib/qubes/qubes-rpc-multiplexer"
+
+VERSION = None
+
+if pathlib.Path(QREXEC_CLIENT_DOM0).is_file():
+    VERSION = "dom0"
+elif pathlib.Path(QREXEC_CLIENT_VM).is_file():
+    VERSION = "vm"
+
+# FROM /usr/lib/python3.8/site-packages/qrexec/client.py <<<
+
 
 def get_main_parser():
     p = argparse.ArgumentParser()
@@ -36,14 +53,47 @@ def main():
         # Path is too long!  We must do without rpcarg.
         rpcarg = None
 
+    # FROM /usr/lib/python3.8/site-packages/qrexec/client.py >>>
+    # 
+    subprocess_args=[]
+    dest=url.netloc,
+    rpcname="ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")
+
+    if VERSION == "dom0" and dest == "dom0":
+        # Invoke qubes-rpc-multiplexer directly. This will work for non-socket
+        # services only.
+        subprocess_args=[
+            RPC_MULTIPLEXER, rpcname, "dom0"]
+
+
+    if VERSION == "dom0":
+        subprocess_args=[
+            QREXEC_CLIENT_DOM0,
+            "-d",
+            dest,
+            f"DEFAULT:QUBESRPC {rpcname} dom0",
+        ]
+
+    if VERSION == "vm":
+        subprocess_args=[
+            QREXEC_CLIENT_VM, dest, rpcname]
+    
+    
+##    vm = subprocess.Popen(
+##        ["/usr/lib/qubes/qrexec-client-vm",
+##         url.netloc,
+##         "ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")],
+##        stdin=subprocess.PIPE,
+##        stdout=subprocess.PIPE,
+##        bufsize=0,
+##    )
+
     vm = subprocess.Popen(
-        ["/usr/lib/qubes/qrexec-client-vm",
-         url.netloc,
-         "ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")],
+        subprocess_args,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         bufsize=0,
-    )
+    ) 
 
     cmd = sys.stdin.readline()
     assert cmd == "capabilities\n"
