@@ -62,13 +62,11 @@ if grep -r --exclude='*.pyc' --exclude='*.pyo' --exclude='*.policy' '@.*@' $RPM_
 fi
 
 %files
-%attr(0755, root, root) %{_libdir}/git-local-qubes
-%attr(0755, root, root) %{_libdir}/git-core/git-remote-qubes
+%attr(0755, root, root) /lib/git-local-qubes
+%attr(0755, root, root) /lib/git-core/git-remote-qubes
 %attr(0755, root, root) %{_libexecdir}/git-local-qubes
 %attr(0755, root, root) %{_libexecdir}/git-core/git-remote-qubes
 %attr(0644, root, root) %{python3_sitelib}/gitremotequbes/*.py
-#%attr(0644, root, root) %{python3_sitelib}/gitremotequbes/*.pyc
-#%attr(0644, root, root) %{python3_sitelib}/gitremotequbes/__pycache__/*.pyc
 %attr(0755, root, root) %{_sysconfdir}/qubes-rpc/ruddo.Git
 %doc README.md
 
