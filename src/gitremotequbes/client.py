@@ -56,14 +56,18 @@ def main():
     # FROM /usr/lib/python3.8/site-packages/qrexec/client.py >>>
     # 
     subprocess_args=[]
-    dest=url.netloc,
+    dest=url.netloc
     rpcname="ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")
+
+    sys.stderr.write("rpcname=" + rpcname + "\n")
+    sys.stderr.write("dest=" + dest + "\n")
 
     if VERSION == "dom0" and dest == "dom0":
         # Invoke qubes-rpc-multiplexer directly. This will work for non-socket
         # services only.
         subprocess_args=[
-            RPC_MULTIPLEXER, rpcname, "dom0"]
+            RPC_MULTIPLEXER, rpcname, "dom0"
+        ]
 
 
     if VERSION == "dom0":
@@ -76,8 +80,18 @@ def main():
 
     if VERSION == "vm":
         subprocess_args=[
-            QREXEC_CLIENT_VM, dest, rpcname]
+            QREXEC_CLIENT_VM, dest, rpcname
+        ]
     
+    sys.stderr.write("subprocess_args=" + ' '.join(subprocess_args) + "\n")
+    l.debug(subprocess_args)
+    vm = subprocess.Popen(
+        subprocess_args,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        bufsize=0,
+    ) 
+
     
 ##    vm = subprocess.Popen(
 ##        ["/usr/lib/qubes/qrexec-client-vm",
@@ -88,13 +102,26 @@ def main():
 ##        bufsize=0,
 ##    )
 
-    vm = subprocess.Popen(
-        subprocess_args,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        bufsize=0,
-    ) 
+##    vm = subprocess.Popen(
+##        [QREXEC_CLIENT_VM,
+##         url.netloc,
+##         "ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")],
+##        stdin=subprocess.PIPE,
+##        stdout=subprocess.PIPE,
+##        bufsize=0,
+##    )
 
+##    vm = subprocess.Popen(
+##        [QREXEC_CLIENT_DOM0,
+##         "-d",
+##         dest,
+##         "DEFAULT:QUBESRPC {rpcname} dom0"],
+##        stdin=subprocess.PIPE,
+##        stdout=subprocess.PIPE,
+##        bufsize=0,
+##    )
+
+    
     cmd = sys.stdin.readline()
     assert cmd == "capabilities\n"
     sys.stdout.write("connect\n\n")
