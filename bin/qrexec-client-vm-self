@@ -10,4 +10,5 @@
 
 
 #export QREXEC_REMOTE_DOMAIN=$1
+
 /etc/qubes-rpc/$1
