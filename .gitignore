@@ -1,9 +1,9 @@
-*.pdf
-*.tex
-*.pyc
-*~
-*.tar.gz
-*.rpm
 *.hide
+*.pdf
+*.pyc
+*.rpm
+*.tar.gz
+*.tex
+*~
 git-remote-qubes-*
 git-remote-qubes_*
