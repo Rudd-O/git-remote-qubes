@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# FIXME: This should Do The Right Thing (TM) when a machine tries to qrexec against itself (which is currently dissalowed by xen)
+
+#echo 'STDOUT: "# FIXME: This should Do The Right Thing (TM) when a machine tries to qrexec against itself (which is currently disallowed by xen)'
+#echo 'STDERR: "# FIXME: This should Do The Right Thing (TM) when a machine tries to qrexec against itself (which is currently disallowed by xen)' 1>&2
+
+
+#echo "STDERR: $0 $@" 1>&2
+
+
+#export QREXEC_REMOTE_DOMAIN=$1
+/etc/qubes-rpc/$1

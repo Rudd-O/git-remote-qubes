@@ -3,17 +3,22 @@ import logging
 import os
 import pipes
 import subprocess
+import socket
 import sys
 import urllib.parse
 
 import gitremotequbes.copier
 
-# FROM /usr/lib/python3.8/site-packages/qrexec/client.py >>>
-# 
+# NOTE: Some things here have been taken from
+# /usr/lib/python3.8/site-packages/qrexec/client.py from a fedora system. For
+# some reason, the installed stuff is different between debian and fedora
+# ... that should probably be addressed.
+#
 import pathlib
 
 QREXEC_CLIENT_DOM0 = "/usr/bin/qrexec-client"
 QREXEC_CLIENT_VM = "/usr/bin/qrexec-client-vm"
+QREXEC_CLIENT_VM_SELF = "/usr/bin/qrexec-client-vm-self"
 RPC_MULTIPLEXER = "/usr/lib/qubes/qubes-rpc-multiplexer"
 
 VERSION = None
@@ -41,8 +46,18 @@ def main():
 
     p = get_main_parser()
     args = p.parse_args()
+#    l.info("args=" + args)
+#    sys.stderr.write("args=" + ' '.join(f'{k}={v}' for k, v in vars(args).items()) + "\n")
+
     url = urllib.parse.urlparse(args.url)
     assert url.scheme == "qubes"
+
+    remoteargs = [args.name, url.path]
+    if os.getenv("QUBES_DEBUG"):
+        remoteargs = ["-d"] + remoteargs
+    quotedargs = " ".join(pipes.quote(x) for x in remoteargs)
+#    sys.stderr.write("quotedargs=" + quotedargs + "\n")
+    quotedlen = len(quotedargs)
 
     l = logging.getLogger()
 
@@ -54,84 +69,76 @@ def main():
         rpcarg = None
 
     # FROM /usr/lib/python3.8/site-packages/qrexec/client.py >>>
-    # 
+    #
     subprocess_args=[]
     dest=url.netloc
     rpcname="ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")
 
-    sys.stderr.write("rpcname=" + rpcname + "\n")
-    sys.stderr.write("dest=" + dest + "\n")
+    client=socket.gethostname()
 
-    if VERSION == "dom0" and dest == "dom0":
-        # Invoke qubes-rpc-multiplexer directly. This will work for non-socket
-        # services only.
-        subprocess_args=[
-            RPC_MULTIPLEXER, rpcname, "dom0"
-        ]
-
+#    sys.stderr.write("rpcname=" + rpcname + "\n")
+#    sys.stderr.write("dest=" + dest + "\n")
+#    sys.stderr.write("client=" + client + "\n")
 
     if VERSION == "dom0":
-        subprocess_args=[
-            QREXEC_CLIENT_DOM0,
-            "-d",
-            dest,
-            f"DEFAULT:QUBESRPC {rpcname} dom0",
-        ]
+        if dest == "dom0":
+            # Invoke qubes-rpc-multiplexer directly. This will work for non-socket
+            # services only.
+            subprocess_args=[
+                RPC_MULTIPLEXER, rpcname, "dom0"
+            ]
+        else:
+            subprocess_args=[
+                QREXEC_CLIENT_DOM0,
+                "-d",
+                dest,
+                f"DEFAULT:QUBESRPC {rpcname} dom0",
+            ]
+
+    use_shell=False
+
+    env = { **os.environ }
 
     if VERSION == "vm":
-        subprocess_args=[
-            QREXEC_CLIENT_VM, dest, rpcname
-        ]
-    
-    sys.stderr.write("subprocess_args=" + ' '.join(subprocess_args) + "\n")
-    l.debug(subprocess_args)
+        if client == dest:
+            use_client_vm_self=os.getenv("QUBES_USE_CLIENT_VM_SELF") \
+                and pathlib.Path(QREXEC_CLIENT_VM_SELF).is_file()
+
+            env = {
+                **os.environ,
+                "QREXEC_SERVICE_ARGUMENT": url.path,
+            }
+
+            if use_client_vm_self:
+                subprocess_args=[
+                    QREXEC_CLIENT_VM_SELF, rpcname
+                ]
+            else:
+                use_shell=True
+                subprocess_args=[
+                    "/etc/qubes-rpc/" + rpcname
+                ]
+        else:
+            subprocess_args=[
+                QREXEC_CLIENT_VM, dest, rpcname
+            ]
+
+#    sys.stderr.write("subprocess_args=" + ' '.join(subprocess_args) + "\n")
+#    l.info(subprocess_args)
     vm = subprocess.Popen(
         subprocess_args,
+        shell=use_shell,
+        env=env,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         bufsize=0,
-    ) 
+    )
 
-    
-##    vm = subprocess.Popen(
-##        ["/usr/lib/qubes/qrexec-client-vm",
-##         url.netloc,
-##         "ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")],
-##        stdin=subprocess.PIPE,
-##        stdout=subprocess.PIPE,
-##        bufsize=0,
-##    )
-
-##    vm = subprocess.Popen(
-##        [QREXEC_CLIENT_VM,
-##         url.netloc,
-##         "ruddo.Git" + ("+%s" % rpcarg if rpcarg else "")],
-##        stdin=subprocess.PIPE,
-##        stdout=subprocess.PIPE,
-##        bufsize=0,
-##    )
-
-##    vm = subprocess.Popen(
-##        [QREXEC_CLIENT_DOM0,
-##         "-d",
-##         dest,
-##         "DEFAULT:QUBESRPC {rpcname} dom0"],
-##        stdin=subprocess.PIPE,
-##        stdout=subprocess.PIPE,
-##        bufsize=0,
-##    )
-
-    
     cmd = sys.stdin.readline()
     assert cmd == "capabilities\n"
     sys.stdout.write("connect\n\n")
     sys.stdout.flush()
 
-    remoteargs = [args.name, url.path]
-    if os.getenv("QUBES_DEBUG"):
-        remoteargs = ["-d"] + remoteargs
-    quotedargs = " ".join(pipes.quote(x) for x in remoteargs)
-    quotedlen = len(quotedargs)
     vm.stdin.write(("%s\n" % quotedlen + quotedargs).encode("utf-8"))
     vm.stdin.flush()
 
