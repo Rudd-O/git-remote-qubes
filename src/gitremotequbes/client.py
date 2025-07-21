@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-import pipes
+import shlex
 import subprocess
 import sys
 import urllib.parse
@@ -53,7 +53,7 @@ def main():
     remoteargs = [args.name, url.path]
     if os.getenv("QUBES_DEBUG"):
         remoteargs = ["-d"] + remoteargs
-    quotedargs = " ".join(pipes.quote(x) for x in remoteargs)
+    quotedargs = " ".join(shlex.quote(x) for x in remoteargs)
     quotedlen = len(quotedargs)
     vm.stdin.write(("%s\n" % quotedlen + quotedargs).encode("utf-8"))
     vm.stdin.flush()
