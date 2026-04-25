@@ -1,1 +1,3 @@
-@LIBEXECDIR@/git-local-qubes
+#!/usr/bin/sh
+
+exec @LIBEXECDIR@/git-local-qubes
